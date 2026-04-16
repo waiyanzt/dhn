@@ -1,0 +1,48 @@
+seed: 0
+device: "cuda:0"
+logging:
+    path: ./runs/
+    experiment: sr25
+model:
+    layers_config:
+        - c2: [1, 10, 2]
+          c3: [1, 10, 3]
+          c4: [1, 10, 4]
+          k3: [1, 10, 3]
+          k4: [1, 10, 4]
+          k5: [1, 10, 5]
+        - c2: [60, 10, 2]
+          c3: [60, 10, 3]
+          c4: [60, 10, 4]
+          k3: [60, 10, 3]
+          k4: [60, 10, 4]
+          k5: [60, 10, 5]
+    out_dim: 15
+    agg: [6]
+    activation:
+        name: ReLU
+        kwargs:
+            inplace: False
+    dropout: 0.05
+training:
+    epochs: 1200
+    batch_size: 15 # only 15 graphs total, use full batch
+    early_stopping_patience: # null - paper needed 800 epochs to converge
+    loss:
+        name: CrossEntropyLoss
+        kwargs:
+            reduction: mean
+            label_smoothing: 0.0
+    optimizer:
+        name: Adam
+        kwargs:
+            lr: 0.001
+    lr_scheduling:
+        name:
+        kwargs: {}
+data:
+    cross_validation: True
+    dataset: sr25
+    root_path: ./data
+    train_data_path:
+    val_data_path:

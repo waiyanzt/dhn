@@ -1,0 +1,48 @@
+seed: 0
+device: "cuda:0"
+logging:
+    path: ./runs/
+    experiment: exp
+model:
+    layers_config:
+        - c2: [2, 10, 2]
+          c3: [2, 10, 3]
+          c4: [2, 10, 4]
+          k3: [2, 10, 3]
+          k4: [2, 10, 4]
+          k5: [2, 10, 5]
+        - c2: [60, 10, 2]
+          c3: [60, 10, 3]
+          c4: [60, 10, 4]
+          k3: [60, 10, 3]
+          k4: [60, 10, 4]
+          k5: [60, 10, 5]
+    out_dim: 2
+    agg: [6]
+    activation:
+        name: ReLU
+        kwargs:
+            inplace: False
+    dropout: 0.05
+training:
+    epochs: 1200
+    batch_size: 32
+    early_stopping_patience: # null - train until convergence
+    loss:
+        name: CrossEntropyLoss
+        kwargs:
+            reduction: mean
+            label_smoothing: 0.0
+    optimizer:
+        name: Adam
+        kwargs:
+            lr: 0.001
+    lr_scheduling:
+        name:
+        kwargs: {}
+data:
+    cross_validation: True
+    dataset: exp
+    root_path: ./data
+    train_data_path:
+    val_data_path:
