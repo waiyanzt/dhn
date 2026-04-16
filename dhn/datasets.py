@@ -36,7 +36,7 @@ class HomDataset(Dataset):
         else:
             print(f"Reading raw data from {os.path.join(root_path, name+'.pkl')}...")
             if name.lower() in ['exp', 'csl', 'sr25']:
-                with open(os.path.join(root_path, name+'.pkl')) as f:
+                with open(os.path.join(root_path, name+'.pkl'), 'rb') as f:
                     self.num_classes, self.num_features, self.raw_data = pkl.load(f)
             else:  # Assume TUDataset
                 self.raw_data = TUDataset(root=self.root_path, name=self.name, use_node_attr=True)

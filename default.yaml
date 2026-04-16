@@ -1,7 +1,7 @@
 seed: 0
 device: 'cuda:0'
 logging:
-  path: /home/gear/projects/dhn/runs/
+  path: ./runs/
   experiment: default
 model:
   layers_config:
@@ -41,6 +41,6 @@ training:
 data:
   cross_validation: True  
   dataset: ENZYMES
-  root_path: /home/gear/projects/dhn/data
+  root_path: ./data/
   train_data_path:
   val_data_path:
