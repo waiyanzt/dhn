@@ -14,9 +14,7 @@ Usage:
 """
 
 import argparse
-import os
 import random
-import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -25,11 +23,8 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-import torch
+from torch_geometric.datasets import TUDataset
 from torch_geometric.utils import to_networkx
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from dhn.datasets import HomDataset
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -43,7 +38,7 @@ def collect_samples(dataset, samples_per_class: int, seed: int = 42):
     by_class = defaultdict(list)
     for i in range(len(dataset)):
         data = dataset[i]
-        label = data.y.item()
+        label = int(data.y.item())
         by_class[label].append(data)
 
     sampled = {}
@@ -52,15 +47,21 @@ def collect_samples(dataset, samples_per_class: int, seed: int = 42):
     return sampled
 
 
+def to_clean_nx_graph(data):
+    """
+    Convert PyG Data -> undirected NetworkX graph and remove self-loops.
+    """
+    G = to_networkx(data, to_undirected=True)
+    G.remove_edges_from(nx.selfloop_edges(G))
+    return G
+
+
 def draw_graph(ax, data, title: str):
     """
     Draw a single PyG Data object on a matplotlib Axes.
     Nodes are coloured by degree (darker = higher degree).
     """
-    G = to_networkx(data, to_undirected=True)
-
-    # Remove self-loops that occasionally appear in TUDatasets
-    G.remove_edges_from(nx.selfloop_edges(G))
+    G = to_clean_nx_graph(data)
 
     # Layout — kamada_kawai is more stable for biological graphs
     try:
@@ -69,21 +70,21 @@ def draw_graph(ax, data, title: str):
         pos = nx.spring_layout(G, seed=42)
 
     degrees = np.array([d for _, d in G.degree()])
-    if degrees.max() == degrees.min():
+    if len(degrees) == 0 or degrees.max() == degrees.min():
         norm_degrees = np.zeros_like(degrees, dtype=float)
     else:
         norm_degrees = (degrees - degrees.min()) / (degrees.max() - degrees.min())
 
     # Map to a blue colormap — low degree = light, high degree = dark
     cmap = cm.get_cmap("Blues")
-    node_colors = [cmap(0.3 + 0.65 * nd) for nd in norm_degrees]
+    node_colors = [cmap(0.3 + 0.65 * nd) for nd in norm_degrees] if len(degrees) else []
 
     nx.draw_networkx_edges(G, pos, ax=ax, edge_color="#cccccc", width=0.8, alpha=0.7)
     nx.draw_networkx_nodes(
         G,
         pos,
         ax=ax,
-        node_color=node_colors,
+        node_color=node_colors if len(node_colors) else "#8db3e2",
         node_size=60,
         linewidths=0.5,
         edgecolors="#555555",
@@ -122,8 +123,9 @@ def make_figure(
             ax = axes[row_idx, col_idx]
             if col_idx < len(samples):
                 data = samples[col_idx]
+                G = to_clean_nx_graph(data)
                 n_nodes = data.num_nodes
-                n_edges = data.edge_index.shape[1] // 2
+                n_edges = G.number_of_edges()  # robust undirected edge count
                 title = f"{class_label}\nnodes={n_nodes}, edges={n_edges}"
                 draw_graph(ax, data, title)
             else:
@@ -207,11 +209,15 @@ def main():
 
     for dataset_name, class_names, filename in configs:
         print(f"\nLoading {dataset_name}...")
-        dataset = HomDataset(dataset_name, root_path=args.data_root)
+        dataset = TUDataset(
+            root=args.data_root,
+            name=dataset_name,
+            use_node_attr=True,
+        )
         print(
             f"  {len(dataset)} graphs, "
             f"{dataset.num_classes} classes, "
-            f"{dataset.num_features} node features"
+            f"{dataset.num_node_features} node features"
         )
 
         sampled = collect_samples(dataset, args.samples_per_class, seed=args.seed)
