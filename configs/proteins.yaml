@@ -18,7 +18,7 @@ model:
           k4: [60, 10, 4]
           k5: [60, 10, 5]
     out_dim: 2
-    agg: [6]
+    agg: [2]
     activation:
         name: ReLU
         kwargs:
